@@ -1,0 +1,96 @@
+networks:
+  test-app:
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: test-app-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./config/default.conf:/etc/nginx/conf.d/default.conf
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+      - ./test-app:/var/www/html:delegated
+      - ./logs:/var/log/nginx/
+    depends_on:
+      - php
+      - mysql
+    networks:
+      - test-app
+
+  php:
+    build:
+      context: .
+      dockerfile: php.dockerfile
+    container_name: test-app-php
+    restart: unless-stopped
+    volumes:
+      - ./test-app:/var/www/html:delegated
+    networks:
+      - test-app
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:latest
+    container_name: test-app-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: testapp
+      MYSQL_DATABASE: testapp
+      MYSQL_USER: testapp
+      MYSQL_PASSWORD: testapp
+    healthcheck:
+      test: [ "CMD", "mysql", "-u", "testapp", "-ptestapp", "-e", "USE testapp;" ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 5s
+    command:
+      - --max_connections=100
+      - --max_execution_time=3000
+      - --innodb_buffer_pool_size=2G
+      - --max_allowed_packet=64M
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    networks:
+      - test-app
+
+  init:
+    build:
+      context: .
+      dockerfile: php.dockerfile
+    container_name: test-app-init
+    entrypoint: /bin/sh -c 'if [ ! -f /var/www/html/.initialized ]; then php /var/www/html/index.php setup; exit 0; fi' sh
+    volumes:
+      - ./test-app:/var/www/html:delegated
+    depends_on:
+      php:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    networks:
+      - test-app
+
+  varnish:
+    image: varnish:latest
+    container_name: test-app-varnish
+    ports:
+      - "80:80"
+    depends_on:
+      - nginx
+    volumes:
+      - ./config/default.vcl:/etc/varnish/default.vcl
+    networks:
+      - test-app
+
+  wrk:
+    image: elswork/wrk
+    container_name: test-app-wrk
+    restart: no
+    networks:
+      - test-app
