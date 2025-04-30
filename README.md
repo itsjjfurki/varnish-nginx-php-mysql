@@ -13,7 +13,7 @@ The setup includes:
 
 Learn more about request coalescing in the accompanying blog post:
 
-👉 [Exploring Request Coalescing with Varnish](https://furkanozturk.dev/<article-url>)
+👉 [Exploring Request Coalescing with Varnish](https://furkanozturk.dev/2025/05/01/exploring-request-coalescing-with-varnish/)
 
 ## 🚀 Getting Started
 
