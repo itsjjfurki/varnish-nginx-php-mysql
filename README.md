@@ -22,7 +22,7 @@ Learn more about request coalescing in the accompanying blog post:
 ```bash
 git clone https://github.com/itsjjfurki/varnish-nginx-php-mysql.git
 cd varnish-nginx-php-mysql
-docker-compose up --build
+docker-compose up -d --build
 ```
 
 **2 - Auto-install:**
